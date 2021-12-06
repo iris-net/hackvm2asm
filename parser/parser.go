@@ -63,8 +63,14 @@ func (p *Parser) load(path string) error {
 
 // removeNotCommand removes not command descriptions
 func (p Parser) removeNotCommand(text string) (ret string) {
-	r := regexp.MustCompile(`(\t|//(\w|\W)*)`)
+	r := regexp.MustCompile(`//(\w|\W)*`)
 	ret = r.ReplaceAllString(text, "")
+
+	r = regexp.MustCompile(`\t`)
+	ret = r.ReplaceAllString(ret, "")
+
+	r = regexp.MustCompile(`\s+$`)
+	ret = r.ReplaceAllString(ret, "")
 
 	return ret
 }

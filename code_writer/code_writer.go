@@ -100,6 +100,36 @@ func (c *CodeWriter) Execute(vmFile, outFile string) error {
 			if err != nil {
 				return err
 			}
+		case command.Label:
+			label, err := p.GetArg1()
+			if err != nil {
+				return err
+			}
+
+			err = c.TranslateLabel(label)
+			if err != nil {
+				return err
+			}
+		case command.If:
+			label, err := p.GetArg1()
+			if err != nil {
+				return err
+			}
+
+			err = c.TranslateIFGoto(label)
+			if err != nil {
+				return err
+			}
+		case command.Goto:
+			label, err := p.GetArg1()
+			if err != nil {
+				return err
+			}
+
+			err = c.TranslateGoto(label)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -296,6 +326,43 @@ func (c *CodeWriter) TranslatePop(seg segment.Segment, index int) error {
 
 	c.addAssemblies(buf)
 
+	return nil
+}
+
+// TranslateLabel translates label
+func (c *CodeWriter) TranslateLabel(label string) error {
+	buf := make([]string, 0, 10)
+	buf = append(buf, fmt.Sprintf("// ===== label %s ======", label))
+	buf = append(buf, fmt.Sprintf("(%s)", label))
+	c.addAssemblies(buf)
+	return nil
+}
+
+// TranslateIFGoto translates if-goto command
+func (c *CodeWriter) TranslateIFGoto(label string) error {
+	buf := make([]string, 0, 10)
+	buf = append(buf, fmt.Sprintf("// ===== if-goto %s ======", label))
+
+	buf = c.decrementSP(buf)
+
+	buf = append(buf, "A=M")
+	buf = append(buf, "D=M")
+	buf = append(buf, fmt.Sprintf("@%s", label))
+	buf = append(buf, "D;JGT")
+
+	c.addAssemblies(buf)
+	return nil
+}
+
+// TranslateGoto translates goto command
+func (c *CodeWriter) TranslateGoto(label string) error {
+	buf := make([]string, 0, 10)
+	buf = append(buf, fmt.Sprintf("// ===== goto %s ======", label))
+
+	buf = append(buf, fmt.Sprintf("@%s", label))
+	buf = append(buf, "0;JMP")
+
+	c.addAssemblies(buf)
 	return nil
 }
 
