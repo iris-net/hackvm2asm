@@ -13,6 +13,8 @@ const TestPointerTestPath = "../test/PointerTest.vm"
 const TestSimpleAddPath = "../test/SimpleAdd.vm"
 const TestStackTestPath = "../test/StackTest.vm"
 const TestStaticTestPath = "../test/StaticTest.vm"
+const TestBasicLoopPath = "../test/BasicLoop.vm"
+const TestFibonacciSeriesPath = "../test/FibonacciSeries.vm"
 
 var _ = Describe("Parser", func() {
 	Context("NewParser()", func() {
@@ -75,6 +77,32 @@ var _ = Describe("Parser", func() {
 
 				exp := []string{
 					"push constant 111", "push constant 333", "push constant 888", "pop static 8", "pop static 3", "pop static 1", "push static 3", "push static 1", "sub", "push static 8", "add",
+				}
+
+				Expect(p.GetCommands()).To(Equal(exp))
+			})
+		})
+
+		When("load BasicLoop.vm", func() {
+			It("successfully load", func() {
+				p, err := parser.NewParser(TestBasicLoopPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"push constant 0", "pop local 0", "label LOOP_START", "push argument 0", "push local 0", "add", "pop local 0", "push argument 0", "push constant 1", "sub", "pop argument 0", "push argument 0", "if-goto LOOP_START", "push local 0",
+				}
+
+				Expect(p.GetCommands()).To(Equal(exp))
+			})
+		})
+
+		When("load FibonacciSeries.vm", func() {
+			It("successfully load", func() {
+				p, err := parser.NewParser(TestFibonacciSeriesPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"push argument 1", "pop pointer 1", "push constant 0", "pop that 0", "push constant 1", "pop that 1", "push argument 0", "push constant 2", "sub", "pop argument 0", "label MAIN_LOOP_START", "push argument 0", "if-goto COMPUTE_ELEMENT", "goto END_PROGRAM", "label COMPUTE_ELEMENT", "push that 0", "push that 1", "add", "pop that 2", "push pointer 1", "push constant 1", "add", "pop pointer 1", "push argument 0", "push constant 1", "sub", "pop argument 0", "goto MAIN_LOOP_START", "label END_PROGRAM",
 				}
 
 				Expect(p.GetCommands()).To(Equal(exp))
@@ -182,6 +210,46 @@ var _ = Describe("Parser", func() {
 				}
 			})
 		})
+
+		When("load BasicLoop.vm", func() {
+			It("successfully get coomand type", func() {
+				p, err := parser.NewParser(TestBasicLoopPath)
+				Expect(err).To(BeNil())
+
+				exp := []command.Type{
+					command.Push, command.Pop, command.Label, command.Push, command.Push, command.Arithmetic, command.Pop, command.Push, command.Push, command.Arithmetic, command.Pop, command.Push, command.If, command.Push,
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					Expect(p.GetCommandType()).To(Equal(exp[i]))
+
+					i++
+				}
+			})
+		})
+
+		When("load FibonacciSeries.vm", func() {
+			It("successfully get coomand type", func() {
+				p, err := parser.NewParser(TestFibonacciSeriesPath)
+				Expect(err).To(BeNil())
+
+				exp := []command.Type{
+					command.Push, command.Pop, command.Push, command.Pop, command.Push, command.Pop, command.Push, command.Push, command.Arithmetic, command.Pop, command.Label, command.Push, command.If, command.Goto, command.Label, command.Push, command.Push, command.Arithmetic, command.Pop, command.Push, command.Push, command.Arithmetic, command.Pop, command.Push, command.Push, command.Arithmetic, command.Pop, command.Goto, command.Label,
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					Expect(p.GetCommandType()).To(Equal(exp[i]))
+
+					i++
+				}
+			})
+		})
 	})
 
 	Context("GetArg1()", func() {
@@ -272,6 +340,46 @@ var _ = Describe("Parser", func() {
 
 				exp := []string{
 					"constant", "constant", "constant", "static", "static", "static", "static", "static", "sub", "static", "add",
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					Expect(p.GetArg1()).To(Equal(exp[i]))
+
+					i++
+				}
+			})
+		})
+
+		When("load BasicLoop.vm", func() {
+			It("successfully get first argument", func() {
+				p, err := parser.NewParser(TestBasicLoopPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"constant", "local", "LOOP_START", "argument", "local", "add", "local", "argument", "constant", "sub", "argument", "argument", "LOOP_START", "local",
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					Expect(p.GetArg1()).To(Equal(exp[i]))
+
+					i++
+				}
+			})
+		})
+
+		When("load FibonacciSeries.vm", func() {
+			It("successfully get first argument", func() {
+				p, err := parser.NewParser(TestFibonacciSeriesPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"argument", "pointer", "constant", "that", "constant", "that", "argument", "constant", "sub", "argument", "MAIN_LOOP_START", "argument", "COMPUTE_ELEMENT", "END_PROGRAM", "COMPUTE_ELEMENT", "that", "that", "add", "that", "pointer", "constant", "add", "pointer", "argument", "constant", "sub", "argument", "MAIN_LOOP_START", "END_PROGRAM",
 				}
 
 				i := 0
@@ -402,6 +510,87 @@ var _ = Describe("Parser", func() {
 
 				exp := []string{
 					"111", "333", "888", "8", "3", "1", "3", "1", "", "8", "",
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					a, err := p.GetArg2()
+
+					Expect(a).To(Equal(exp[i]))
+					if len(a) == 0 {
+						Expect(err == nil).To(BeFalse())
+					} else {
+						Expect(err == nil).To(BeTrue())
+					}
+
+					i++
+				}
+			})
+		})
+
+		When("load StaticTest.vm", func() {
+			It("successfully get second argument", func() {
+				p, err := parser.NewParser(TestStaticTestPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"111", "333", "888", "8", "3", "1", "3", "1", "", "8", "",
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					a, err := p.GetArg2()
+
+					Expect(a).To(Equal(exp[i]))
+					if len(a) == 0 {
+						Expect(err == nil).To(BeFalse())
+					} else {
+						Expect(err == nil).To(BeTrue())
+					}
+
+					i++
+				}
+			})
+		})
+
+		When("load BasicLoop.vm", func() {
+			It("successfully get second argument", func() {
+				p, err := parser.NewParser(TestBasicLoopPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"0", "0", "", "0", "0", "", "0", "0", "1", "", "0", "0", "", "0",
+				}
+
+				i := 0
+				for p.HasMoreCommands() {
+					p.Advance()
+
+					a, err := p.GetArg2()
+
+					Expect(a).To(Equal(exp[i]))
+					if len(a) == 0 {
+						Expect(err == nil).To(BeFalse())
+					} else {
+						Expect(err == nil).To(BeTrue())
+					}
+
+					i++
+				}
+			})
+		})
+
+		When("load FibonacciSeries.vm", func() {
+			It("successfully get second argument", func() {
+				p, err := parser.NewParser(TestFibonacciSeriesPath)
+				Expect(err).To(BeNil())
+
+				exp := []string{
+					"1", "1", "0", "0", "1", "1", "0", "2", "", "0", "", "0", "", "", "", "0", "1", "", "2", "1", "1", "", "1", "0", "1", "", "0", "", "",
 				}
 
 				i := 0

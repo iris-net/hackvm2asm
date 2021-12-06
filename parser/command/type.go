@@ -24,6 +24,12 @@ func NewType(cmd string) Type {
 		return Push
 	case "pop":
 		return Pop
+	case "label":
+		return Label
+	case "if-goto":
+		return If
+	case "goto":
+		return Goto
 	}
 
 	return Unknown
